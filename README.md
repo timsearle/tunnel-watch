@@ -71,7 +71,7 @@ tunnel-watch status --app-id "..." --app-key "..."
 ## CI / Releases
 
 - CI: `.github/workflows/ci.yml` runs `swift test` on push/PR.
-- Release: `.github/workflows/release.yml` runs on push to `main` and:
+- Release: `.github/workflows/release.yml` runs on manual dispatch and:
   - computes the next **minor** tag (e.g. `v0.0.0` → `v0.1.0`)
   - builds `tunnel-watch-macos-arm64.zip` and creates a GitHub Release
   - treats releases as **immutable** (reruns verify the existing asset but do not overwrite it)
