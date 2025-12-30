@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.1
 
 import PackageDescription
 
@@ -18,13 +18,19 @@ let package = Package(
             targets: ["tunnel-watch"]
         ),
     ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
+    ],
     targets: [
         .target(
             name: "TunnelWatchCore"
         ),
         .executableTarget(
             name: "tunnel-watch",
-            dependencies: ["TunnelWatchCore"]
+            dependencies: [
+                "TunnelWatchCore",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ]
         ),
         .testTarget(
             name: "TunnelWatchCoreTests",

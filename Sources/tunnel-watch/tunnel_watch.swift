@@ -1,141 +1,96 @@
+import ArgumentParser
 import Foundation
 import TunnelWatchCore
 
+#if canImport(Darwin)
+import Darwin
+#else
+import Glibc
+#endif
+
 @main
-struct TunnelWatchCLI {
-    static func main() async {
-        let args = Array(CommandLine.arguments.dropFirst())
+struct TunnelWatch: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "tunnel-watch",
+        abstract: "Report whether the Rotherhithe Tunnel is open or closed (TfL).",
+        version: Version.current,
+        subcommands: [Status.self],
+        defaultSubcommand: Status.self
+    )
 
-        if args.contains("-h") || args.contains("--help") {
-            print(usage)
-            return
-        }
+    struct Status: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            abstract: "Check tunnel status via TfL road disruptions."
+        )
 
-        let command = args.first
-        let commandArgs = command == nil || command == "status" ? args.dropFirst(command == nil ? 0 : 1) : args.dropFirst(1)
+        @Option(name: .customLong("tunnel-name"), help: "Tunnel name to match in TfL disruptions (case-insensitive substring match).")
+        var tunnelName: String = "Rotherhithe Tunnel"
 
-        guard command == nil || command == "status" else {
-            fputs("Unknown command: \(command!)\n\n", stderr)
-            print(usage)
-            Darwin.exit(2)
-        }
+        @Flag(name: .customLong("json"), help: "Output JSON to stdout.")
+        var json: Bool = false
 
-        do {
-            let options = try Options.parse(Array(commandArgs))
+        @Flag(name: .customLong("quiet"), help: "Print only OPEN/CLOSED/UNKNOWN (stdout).")
+        var quiet: Bool = false
 
-            let client = TfLClient(
-                baseURL: options.baseURL,
-                appId: options.appId,
-                appKey: options.appKey
-            )
+        @Option(name: .customLong("base-url"), help: "TfL API base URL.")
+        var baseURLString: String = "https://api.tfl.gov.uk"
 
-            let service = TunnelStatusService(client: client)
-            let result = try await service.fetchTunnelStatus(tunnelName: options.tunnelName)
+        @Option(name: .customLong("app-id"), help: "TfL app id (defaults to env TFL_APP_ID).")
+        var appId: String = ProcessInfo.processInfo.environment["TFL_APP_ID"] ?? ""
 
-            if options.json {
-                let encoder = JSONEncoder()
-                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                let data = try encoder.encode(result)
-                FileHandle.standardOutput.write(data)
-                FileHandle.standardOutput.write("\n".data(using: .utf8)!)
-            } else {
-                if options.quiet {
+        @Option(name: .customLong("app-key"), help: "TfL app key (defaults to env TFL_APP_KEY).")
+        var appKey: String = ProcessInfo.processInfo.environment["TFL_APP_KEY"] ?? ""
+
+        func run() async throws {
+            do {
+                guard let baseURL = URL(string: baseURLString) else {
+                    throw ValidationError("Invalid --base-url: \(baseURLString)")
+                }
+
+                let client = TfLClient(
+                    baseURL: baseURL,
+                    appId: appId.isEmpty ? nil : appId,
+                    appKey: appKey.isEmpty ? nil : appKey
+                )
+                let service = TunnelStatusService(client: client)
+                let result = try await service.fetchTunnelStatus(tunnelName: tunnelName)
+
+                if json {
+                    let encoder = JSONEncoder()
+                    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                    let data = try encoder.encode(result)
+                    FileHandle.standardOutput.write(data)
+                    FileHandle.standardOutput.write("\n".data(using: .utf8)!)
+                } else if quiet {
                     print(result.state.rawValue.uppercased())
                 } else {
                     print("\(result.tunnelName): \(result.state.rawValue.uppercased()) — \(result.severityDescription)")
                 }
-            }
 
-            switch result.state {
-            case .open:
-                Darwin.exit(0)
-            case .closed:
-                Darwin.exit(1)
-            case .unknown:
-                Darwin.exit(3)
+                switch result.state {
+                case .open:
+                    TunnelWatch.exitProcess(0)
+                case .closed:
+                    TunnelWatch.exitProcess(1)
+                case .unknown:
+                    TunnelWatch.exitProcess(3)
+                }
+            } catch {
+                fputs("Error: \(error)\n", stderr)
+                TunnelWatch.exitProcess(2)
             }
-        } catch {
-            fputs("Error: \(error)\n", stderr)
-            Darwin.exit(2)
         }
+    }
+
+    static func exitProcess(_ code: Int32) -> Never {
+        #if canImport(Darwin)
+        Darwin.exit(code)
+        #else
+        Glibc.exit(code)
+        #endif
     }
 }
 
-private let usage = """
-Usage:
-  tunnel-watch status [--tunnel-name <name>] [--json] [--quiet] [--base-url <url>]
-
-Environment:
-  TFL_APP_ID
-  TFL_APP_KEY
-
-Exit codes:
-  0: open
-  1: closed
-  2: error
-  3: unknown
-
-Examples:
-  tunnel-watch status
-  tunnel-watch status --tunnel-name "Rotherhithe Tunnel"
-  tunnel-watch status --json
-"""
-
-private struct Options {
-    var tunnelName: String = "Rotherhithe Tunnel"
-    var json: Bool = false
-    var quiet: Bool = false
-    var baseURL: URL = URL(string: "https://api.tfl.gov.uk")!
-    var appId: String? = ProcessInfo.processInfo.environment["TFL_APP_ID"]
-    var appKey: String? = ProcessInfo.processInfo.environment["TFL_APP_KEY"]
-
-    static func parse(_ args: [String]) throws -> Options {
-        enum ParseError: Swift.Error, CustomStringConvertible {
-            case missingValue(String)
-            case invalidURL(String)
-            case unknownFlag(String)
-
-            var description: String {
-                switch self {
-                case .missingValue(let f): return "Missing value for \(f)"
-                case .invalidURL(let u): return "Invalid URL: \(u)"
-                case .unknownFlag(let f): return "Unknown flag: \(f)"
-                }
-            }
-        }
-
-        var o = Options()
-        var i = 0
-        while i < args.count {
-            let a = args[i]
-            switch a {
-            case "--tunnel-name":
-                guard i + 1 < args.count else { throw ParseError.missingValue(a) }
-                o.tunnelName = args[i + 1]
-                i += 2
-            case "--json":
-                o.json = true
-                i += 1
-            case "--quiet":
-                o.quiet = true
-                i += 1
-            case "--base-url":
-                guard i + 1 < args.count else { throw ParseError.missingValue(a) }
-                guard let url = URL(string: args[i + 1]) else { throw ParseError.invalidURL(args[i + 1]) }
-                o.baseURL = url
-                i += 2
-            case "--app-id":
-                guard i + 1 < args.count else { throw ParseError.missingValue(a) }
-                o.appId = args[i + 1]
-                i += 2
-            case "--app-key":
-                guard i + 1 < args.count else { throw ParseError.missingValue(a) }
-                o.appKey = args[i + 1]
-                i += 2
-            default:
-                throw ParseError.unknownFlag(a)
-            }
-        }
-        return o
-    }
+private enum Version {
+    static let current = "0.1.0"
 }
