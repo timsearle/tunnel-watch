@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next minor tag
+        id: ver
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          EXISTING=$(git tag --points-at HEAD | grep '^v' | sort -Vr | head -n 1 || true)
+          if [ -n "${EXISTING}" ]; then
+            echo "tag=${EXISTING}" >> "$GITHUB_OUTPUT"
+            echo "version=${EXISTING#v}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          LATEST=$(git tag -l 'v*' --sort=-v:refname | head -n 1 || true)
+          if [ -z "${LATEST}" ]; then
+            LATEST="v0.0.0"
+          fi
+
+          RAW="${LATEST#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<<"${RAW}"
+          : "${MAJOR:?}" "${MINOR:?}" "${PATCH:?}"
+
+          NEXT_MINOR=$((MINOR + 1))
+          NEW_TAG="v${MAJOR}.${NEXT_MINOR}.0"
+
+          echo "tag=${NEW_TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${NEW_TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.1"
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: Package
+        id: pkg
+        env:
+          TAG: ${{ steps.ver.outputs.tag }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          ASSET="tunnel-watch-macos-arm64.zip"
+
+          BIN_DIR="$(swift build -c release --show-bin-path)"
+
+          mkdir -p dist
+          cp "${BIN_DIR}/tunnel-watch" dist/tunnel-watch
+          chmod +x dist/tunnel-watch
+          (cd dist && zip -qry "../${ASSET}" "tunnel-watch")
+
+          SHA=$(shasum -a 256 "${ASSET}" | awk '{print $1}')
+
+          echo "asset=${ASSET}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release (immutable)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.pkg.outputs.tag }}
+          ASSET: ${{ steps.pkg.outputs.asset }}
+        run: |
+          set -euo pipefail
+
+          if ! gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release create "${TAG}" --generate-notes --target "${GITHUB_SHA}"
+          fi
+
+          if gh release view "${TAG}" --json assets --jq '.assets[].name' | grep -Fx "${ASSET}" >/dev/null; then
+            echo "Release asset already exists; verifying sha256 and refusing to overwrite."
+
+            TMP_DIR=$(mktemp -d)
+            gh release download "${TAG}" -p "${ASSET}" -D "${TMP_DIR}"
+
+            REMOTE_SHA=$(shasum -a 256 "${TMP_DIR}/${ASSET}" | awk '{print $1}')
+            LOCAL_SHA=$(shasum -a 256 "${ASSET}" | awk '{print $1}')
+
+            if [ "${REMOTE_SHA}" != "${LOCAL_SHA}" ]; then
+              echo "Existing release asset sha mismatch; refusing to overwrite."
+              echo "remote=${REMOTE_SHA} local=${LOCAL_SHA}"
+              exit 1
+            fi
+          else
+            gh release upload "${TAG}" "${ASSET}"
+          fi
+
+      - name: Trigger Homebrew tap update
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          SHA256: ${{ steps.pkg.outputs.sha256 }}
+          VERSION: ${{ steps.pkg.outputs.version }}
+          TAG: ${{ steps.pkg.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          URL="https://github.com/timsearle/tunnel-watch/releases/download/${TAG}/tunnel-watch-macos-arm64.zip"
+
+          gh workflow run update-formula.yml \
+            -R timsearle/homebrew-tap \
+            -f formula=tunnel-watch \
+            -f url="${URL}" \
+            -f sha256="${SHA256}" \
+            -f version="${VERSION}" \
+            -f branch=main
+
+          sleep 5
+          RUN_ID=$(gh run list -R timsearle/homebrew-tap --workflow update-formula.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+          gh run watch -R timsearle/homebrew-tap "${RUN_ID}" --exit-status

@@ -1,34 +1,81 @@
 # tunnel-watch
 
-A tiny CLI to report whether the Rotherhithe Tunnel is open or closed, powered by the TfL Road Disruption API.
+Report whether the Rotherhithe Tunnel is open or closed, powered by the TfL Road Disruption API.
 
-## Install / Build
+## Build
 
-```sh
+```bash
+# Debug build
+swift build
+
+# Release build
 swift build -c release
+
+# Tests
+swift test
 ```
 
-## Usage
+## Install (Homebrew)
 
-```sh
-# Defaults to "Rotherhithe Tunnel"
-swift run tunnel-watch status
+```bash
+brew tap timsearle/tap
+brew install tunnel-watch
 
-# JSON output
-swift run tunnel-watch status --json
+# Upgrade later
+brew upgrade tunnel-watch
+```
+
+## Quickstart (CLI)
+
+```bash
+# Help
+./.build/release/tunnel-watch --help
+./.build/release/tunnel-watch help status
+
+# Status (defaults to "Rotherhithe Tunnel")
+tunnel-watch status
 
 # Quiet output for scripts
-swift run tunnel-watch status --quiet
+# Exit codes: 0=open, 1=closed, 2=error, 3=unknown
+tunnel-watch status --quiet
 
-# Override the name we match on (case-insensitive substring match)
-swift run tunnel-watch status --tunnel-name "Rotherhithe Tunnel"
+# JSON output
+tunnel-watch status --json
+
+# Override the name we match on
+tunnel-watch status --tunnel-name "Rotherhithe Tunnel"
 ```
+
+## Flags (common)
+
+| Option | Description |
+|--------|-------------|
+| `--help` | Show help |
+| `--version` | Show version |
 
 ## TfL credentials (optional)
 
-Set these environment variables if you have them:
+If you have credentials, set these environment variables:
 
-```sh
+```bash
 export TFL_APP_ID=...
 export TFL_APP_KEY=...
 ```
+
+Or pass them explicitly:
+
+```bash
+tunnel-watch status --app-id "..." --app-key "..."
+```
+
+## CI / Releases
+
+- CI: `.github/workflows/ci.yml` runs `swift test` on push/PR.
+- Release: `.github/workflows/release.yml` runs on push to `main` and:
+  - computes the next **minor** tag (e.g. `v0.0.0` → `v0.1.0`)
+  - builds `tunnel-watch-macos-arm64.zip` and creates a GitHub Release
+  - treats releases as **immutable** (reruns verify the existing asset but do not overwrite it)
+  - triggers `timsearle/homebrew-tap`’s `update-formula.yml` to update the Homebrew formula
+
+Required secret:
+- `HOMEBREW_TAP_TOKEN`: token that can run workflows on `timsearle/homebrew-tap`.
