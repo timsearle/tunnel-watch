@@ -13,6 +13,10 @@ let package = Package(
             name: "TunnelWatchCore",
             targets: ["TunnelWatchCore"]
         ),
+        .library(
+            name: "TunnelWatchAppleSupport",
+            targets: ["TunnelWatchAppleSupport"]
+        ),
         .executable(
             name: "tunnel-watch",
             targets: ["tunnel-watch"]
@@ -25,6 +29,10 @@ let package = Package(
         .target(
             name: "TunnelWatchCore"
         ),
+        .target(
+            name: "TunnelWatchAppleSupport",
+            dependencies: ["TunnelWatchCore"]
+        ),
         .executableTarget(
             name: "tunnel-watch",
             dependencies: [
@@ -35,6 +43,10 @@ let package = Package(
         .testTarget(
             name: "TunnelWatchCoreTests",
             dependencies: ["TunnelWatchCore"]
+        ),
+        .testTarget(
+            name: "TunnelWatchAppleSupportTests",
+            dependencies: ["TunnelWatchAppleSupport"]
         ),
     ]
 )

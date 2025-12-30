@@ -68,6 +68,15 @@ Or pass them explicitly:
 tunnel-watch status --app-id "..." --app-key "..."
 ```
 
+## Apple (iOS / Widget / CarPlay)
+
+This repo includes an Apple-facing support library (`TunnelWatchAppleSupport`) intended for reuse by future iOS / WidgetKit / CarPlay UIs.
+
+- `TunnelStatusFetcher` gives you a simple `TunnelStatusSnapshot` (open/closed/unknown)
+- `TunnelStatusSimpleView` is a basic SwiftUI view for displaying the snapshot
+- `TunnelWatchCarPlay.makeStatusTemplate(...)` builds a simple `CPListTemplate` when compiled for CarPlay
+- `TunnelWatchWidgetProvider` provides WidgetKit-friendly entries when compiled with WidgetKit
+
 ## CI / Releases
 
 - CI: `.github/workflows/ci.yml` runs `swift test` on push/PR.
