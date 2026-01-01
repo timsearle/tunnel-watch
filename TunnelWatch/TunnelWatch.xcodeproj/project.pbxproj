@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		73A1C0102F07000000AA0001 /* TunnelWatchAppleSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 73A1C0032F07000000AA0001 /* TunnelWatchAppleSupport */; };
 		73A1C0112F07000000AA0001 /* TunnelWatchAppleSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 73A1C0032F07000000AA0001 /* TunnelWatchAppleSupport */; };
+		73A1C0122F07000000AA0001 /* TunnelWatchAppleSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 73A1C0032F07000000AA0001 /* TunnelWatchAppleSupport */; };
+		73A1C0132F07000000AA0001 /* TunnelWatchWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 73A1C1002F07010000AA0001 /* TunnelWatchWidget.appex */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,12 +28,20 @@
 			remoteGlobalIDString = 7335FD912F06DB3C00EF5EF1;
 			remoteInfo = TunnelWatch;
 		};
+		73A1C10B2F07010000AA0001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7335FD8A2F06DB3C00EF5EF1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 73A1C1022F07010000AA0001;
+			remoteInfo = TunnelWatchWidget;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		7335FD922F06DB3C00EF5EF1 /* TunnelWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TunnelWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7335FD9F2F06DB3D00EF5EF1 /* TunnelWatchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TunnelWatchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7335FDA92F06DB3D00EF5EF1 /* TunnelWatchUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TunnelWatchUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		73A1C1002F07010000AA0001 /* TunnelWatchWidget.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = TunnelWatchWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -50,7 +60,26 @@
 			path = TunnelWatchUITests;
 			sourceTree = "<group>";
 		};
+		73A1C1012F07010000AA0001 /* TunnelWatchWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TunnelWatchWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		73A1C1062F07010000AA0001 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				73A1C0132F07000000AA0001 /* TunnelWatchWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		7335FD8F2F06DB3C00EF5EF1 /* Frameworks */ = {
@@ -76,6 +105,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		73A1C1042F07010000AA0001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				73A1C0122F07000000AA0001 /* TunnelWatchAppleSupport in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -93,6 +130,7 @@
 			isa = PBXGroup;
 			children = (
 				7335FD922F06DB3C00EF5EF1 /* TunnelWatch.app */,
+				73A1C1002F07010000AA0001 /* TunnelWatchWidget.appex */,
 				7335FD9F2F06DB3D00EF5EF1 /* TunnelWatchTests.xctest */,
 				7335FDA92F06DB3D00EF5EF1 /* TunnelWatchUITests.xctest */,
 			);
@@ -109,10 +147,12 @@
 				7335FD8E2F06DB3C00EF5EF1 /* Sources */,
 				7335FD8F2F06DB3C00EF5EF1 /* Frameworks */,
 				7335FD902F06DB3C00EF5EF1 /* Resources */,
+				73A1C1062F07010000AA0001 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				73A1C10A2F07010000AA0001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				7335FD942F06DB3C00EF5EF1 /* TunnelWatch */,
@@ -172,6 +212,29 @@
 			productReference = 7335FDA92F06DB3D00EF5EF1 /* TunnelWatchUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		73A1C1022F07010000AA0001 /* TunnelWatchWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 73A1C1072F07010000AA0001 /* Build configuration list for PBXNativeTarget "TunnelWatchWidget" */;
+			buildPhases = (
+				73A1C1032F07010000AA0001 /* Sources */,
+				73A1C1042F07010000AA0001 /* Frameworks */,
+				73A1C1052F07010000AA0001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				73A1C1012F07010000AA0001 /* TunnelWatchWidget */,
+			);
+			name = TunnelWatchWidget;
+			packageProductDependencies = (
+				73A1C0032F07000000AA0001 /* TunnelWatchAppleSupport */,
+			);
+			productName = TunnelWatchWidget;
+			productReference = 73A1C1002F07010000AA0001 /* TunnelWatchWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -193,6 +256,9 @@
 						CreatedOnToolsVersion = 26.0.1;
 						TestTargetID = 7335FD912F06DB3C00EF5EF1;
 					};
+					73A1C1022F07010000AA0001 = {
+						CreatedOnToolsVersion = 26.2;
+					};
 				};
 			};
 			buildConfigurationList = 7335FD8D2F06DB3C00EF5EF1 /* Build configuration list for PBXProject "TunnelWatch" */;
@@ -213,6 +279,7 @@
 			projectRoot = "";
 			targets = (
 				7335FD912F06DB3C00EF5EF1 /* TunnelWatch */,
+				73A1C1022F07010000AA0001 /* TunnelWatchWidget */,
 				7335FD9E2F06DB3D00EF5EF1 /* TunnelWatchTests */,
 				7335FDA82F06DB3D00EF5EF1 /* TunnelWatchUITests */,
 			);
@@ -235,6 +302,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		7335FDA72F06DB3D00EF5EF1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		73A1C1052F07010000AA0001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -265,6 +339,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		73A1C1032F07010000AA0001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -277,6 +358,11 @@
 			isa = PBXTargetDependency;
 			target = 7335FD912F06DB3C00EF5EF1 /* TunnelWatch */;
 			targetProxy = 7335FDAA2F06DB3D00EF5EF1 /* PBXContainerItemProxy */;
+		};
+		73A1C10A2F07010000AA0001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 73A1C1022F07010000AA0001 /* TunnelWatchWidget */;
+			targetProxy = 73A1C10B2F07010000AA0001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -604,6 +690,48 @@
 			};
 			name = Release;
 		};
+		73A1C1082F07010000AA0001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AFZ4443Y2P;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/TunnelWatchWidget-Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.searle.TunnelWatch.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+			};
+			name = Debug;
+		};
+		73A1C1092F07010000AA0001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AFZ4443Y2P;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/TunnelWatchWidget-Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.searle.TunnelWatch.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -639,6 +767,15 @@
 			buildConfigurations = (
 				7335FDBA2F06DB3D00EF5EF1 /* Debug */,
 				7335FDBB2F06DB3D00EF5EF1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		73A1C1072F07010000AA0001 /* Build configuration list for PBXNativeTarget "TunnelWatchWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				73A1C1082F07010000AA0001 /* Debug */,
+				73A1C1092F07010000AA0001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
