@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		73A1C0102F07000000AA0001 /* TunnelWatchAppleSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 73A1C0032F07000000AA0001 /* TunnelWatchAppleSupport */; };
+		73A1C0112F07000000AA0001 /* TunnelWatchAppleSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 73A1C0032F07000000AA0001 /* TunnelWatchAppleSupport */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		7335FDA02F06DB3D00EF5EF1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				73A1C0102F07000000AA0001 /* TunnelWatchAppleSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -59,6 +65,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				73A1C0112F07000000AA0001 /* TunnelWatchAppleSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +119,7 @@
 			);
 			name = TunnelWatch;
 			packageProductDependencies = (
+				73A1C0032F07000000AA0001 /* TunnelWatchAppleSupport */,
 			);
 			productName = TunnelWatch;
 			productReference = 7335FD922F06DB3C00EF5EF1 /* TunnelWatch.app */;
@@ -135,6 +143,7 @@
 			);
 			name = TunnelWatchTests;
 			packageProductDependencies = (
+				73A1C0032F07000000AA0001 /* TunnelWatchAppleSupport */,
 			);
 			productName = TunnelWatchTests;
 			productReference = 7335FD9F2F06DB3D00EF5EF1 /* TunnelWatchTests.xctest */;
@@ -194,6 +203,9 @@
 				Base,
 			);
 			mainGroup = 7335FD892F06DB3C00EF5EF1;
+			packageReferences = (
+				73A1C0022F07000000AA0001 /* XCLocalSwiftPackageReference "tunnel-watch" */,
+			);
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7335FD932F06DB3C00EF5EF1 /* Products */;
@@ -267,6 +279,21 @@
 			targetProxy = 7335FDAA2F06DB3D00EF5EF1 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		73A1C0022F07000000AA0001 /* XCLocalSwiftPackageReference "tunnel-watch" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		73A1C0032F07000000AA0001 /* TunnelWatchAppleSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 73A1C0022F07000000AA0001 /* XCLocalSwiftPackageReference "tunnel-watch" */;
+			productName = TunnelWatchAppleSupport;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7335FDB12F06DB3D00EF5EF1 /* Debug */ = {
@@ -397,7 +424,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -441,7 +469,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
