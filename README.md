@@ -25,6 +25,13 @@ brew install tunnel-watch
 brew upgrade tunnel-watch
 ```
 
+## Install (Linux / Raspberry Pi)
+
+```bash
+swift build -c release
+install -m 755 .build/release/tunnel-watch /usr/local/bin/tunnel-watch
+```
+
 ## Quickstart (CLI)
 
 ```bash

@@ -75,4 +75,21 @@ final class TunnelWatchCoreTests: XCTestCase {
         let disruptions = try JSONDecoder().decode([TfLClient.RoadDisruption].self, from: Data(json.utf8))
         XCTAssertFalse(TunnelStatusService.isClosed(disruptions[0]))
     }
+
+    func testMatchesIgnoresCaseAndWhitespace() throws {
+        let disruption = TfLClient.RoadDisruption(
+            id: "D1",
+            severity: nil,
+            status: nil,
+            category: nil,
+            subCategory: nil,
+            location: "[A101] ROTHERHITHE TUNNEL",
+            comments: "Maintenance works",
+            hasClosures: nil,
+            streets: nil
+        )
+
+        XCTAssertTrue(TunnelStatusService.matches(disruption, query: "  rotherhithe tunnel  "))
+        XCTAssertFalse(TunnelStatusService.matches(disruption, query: ""))
+    }
 }
