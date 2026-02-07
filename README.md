@@ -28,8 +28,10 @@ brew upgrade tunnel-watch
 ## Install (Linux / Raspberry Pi)
 
 ```bash
-swift build -c release
-install -m 755 .build/release/tunnel-watch /usr/local/bin/tunnel-watch
+curl -L -o tunnel-watch-linux-arm64.tar.gz \
+  https://github.com/timsearle/tunnel-watch/releases/latest/download/tunnel-watch-linux-arm64.tar.gz
+tar -xzf tunnel-watch-linux-arm64.tar.gz
+install -m 755 tunnel-watch /usr/local/bin/tunnel-watch
 ```
 
 ## Quickstart (CLI)
