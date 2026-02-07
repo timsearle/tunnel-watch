@@ -16,6 +16,7 @@ jobs:
     outputs:
       tag: ${{ steps.pkg.outputs.tag }}
       version: ${{ steps.pkg.outputs.version }}
+      sha256: ${{ steps.pkg.outputs.sha256 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -110,29 +111,6 @@ jobs:
             gh release upload "${TAG}" "${ASSET}"
           fi
 
-      - name: Trigger Homebrew tap update
-        env:
-          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          SHA256: ${{ steps.pkg.outputs.sha256 }}
-          VERSION: ${{ steps.pkg.outputs.version }}
-          TAG: ${{ steps.pkg.outputs.tag }}
-        run: |
-          set -euo pipefail
-
-          URL="https://github.com/timsearle/tunnel-watch/releases/download/${TAG}/tunnel-watch-macos-arm64.zip"
-
-          gh workflow run update-formula.yml \
-            -R timsearle/homebrew-tap \
-            -f formula=tunnel-watch \
-            -f url="${URL}" \
-            -f sha256="${SHA256}" \
-            -f version="${VERSION}" \
-            -f branch=main
-
-          sleep 5
-          RUN_ID=$(gh run list -R timsearle/homebrew-tap --workflow update-formula.yml --limit 1 --json databaseId --jq '.[0].databaseId')
-          gh run watch -R timsearle/homebrew-tap "${RUN_ID}" --exit-status
-
   release-linux:
     needs: release
     runs-on: ubuntu-24.04-arm64
@@ -195,3 +173,30 @@ jobs:
           else
             gh release upload "${TAG}" "${ASSET}"
           fi
+
+  homebrew-update:
+    needs: release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Trigger Homebrew tap update
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          SHA256: ${{ needs.release.outputs.sha256 }}
+          VERSION: ${{ needs.release.outputs.version }}
+          TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          URL="https://github.com/timsearle/tunnel-watch/releases/download/${TAG}/tunnel-watch-macos-arm64.zip"
+
+          gh workflow run update-formula.yml \
+            -R timsearle/homebrew-tap \
+            -f formula=tunnel-watch \
+            -f url="${URL}" \
+            -f sha256="${SHA256}" \
+            -f version="${VERSION}" \
+            -f branch=main
+
+          sleep 5
+          RUN_ID=$(gh run list -R timsearle/homebrew-tap --workflow update-formula.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+          gh run watch -R timsearle/homebrew-tap "${RUN_ID}" --exit-status
