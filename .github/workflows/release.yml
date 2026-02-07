@@ -108,7 +108,7 @@ jobs:
 
   release-linux:
     needs: prepare
-    runs-on: ubuntu-24.04-arm64
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
 
