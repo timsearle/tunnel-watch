@@ -142,13 +142,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.prepare.outputs.tag }}
           ASSET: ${{ steps.pkg.outputs.asset }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
-          if gh release view "${TAG}" --json assets --jq '.assets[].name' | grep -Fx "${ASSET}" >/dev/null; then
+          RELEASE_ID=$(curl -sSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            "https://api.github.com/repos/${REPO}/releases/tags/${TAG}" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+
+          EXISTING=$(curl -sSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            "https://api.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets" \
+            | python3 -c "import sys,json; names=[a['name'] for a in json.load(sys.stdin)]; print('yes' if '${ASSET}' in names else 'no')")
+
+          if [ "${EXISTING}" = "yes" ]; then
             echo "Asset ${ASSET} already exists for ${TAG}; skipping upload."
           else
-            gh release upload "${TAG}" "${ASSET}"
+            curl -sSL -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Content-Type: application/gzip" \
+              --data-binary @"${ASSET}" \
+              "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${ASSET}"
           fi
 
   homebrew-update:
