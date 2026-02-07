@@ -4,10 +4,8 @@ import TunnelWatchCore
 
 #if canImport(Darwin)
 import Darwin
-private nonisolated(unsafe) let _stderr = Darwin.stderr
 #else
 import Glibc
-private nonisolated(unsafe) let _stderr = Glibc.stderr
 #endif
 
 @main
@@ -78,7 +76,7 @@ struct TunnelWatch: AsyncParsableCommand {
                     TunnelWatch.exitProcess(3)
                 }
             } catch {
-                fputs("Error: \(error)\n", _stderr)
+                FileHandle.standardError.write(Data("Error: \(error)\n".utf8))
                 TunnelWatch.exitProcess(2)
             }
         }
