@@ -13,6 +13,9 @@ concurrency:
 jobs:
   release:
     runs-on: macos-14
+    outputs:
+      tag: ${{ steps.pkg.outputs.tag }}
+      version: ${{ steps.pkg.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -129,3 +132,66 @@ jobs:
           sleep 5
           RUN_ID=$(gh run list -R timsearle/homebrew-tap --workflow update-formula.yml --limit 1 --json databaseId --jq '.[0].databaseId')
           gh run watch -R timsearle/homebrew-tap "${RUN_ID}" --exit-status
+
+  release-linux:
+    needs: release
+    runs-on: ubuntu-24.04-arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.1"
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: Package (linux arm64)
+        id: pkg
+        env:
+          TAG: ${{ needs.release.outputs.tag }}
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          ASSET="tunnel-watch-linux-arm64.tar.gz"
+
+          BIN_DIR="$(swift build -c release --show-bin-path)"
+
+          mkdir -p dist
+          cp "${BIN_DIR}/tunnel-watch" dist/tunnel-watch
+          chmod +x dist/tunnel-watch
+          (cd dist && tar -czf "../${ASSET}" "tunnel-watch")
+
+          SHA=$(sha256sum "${ASSET}" | awk '{print $1}')
+
+          echo "asset=${ASSET}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Linux asset (immutable)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release.outputs.tag }}
+          ASSET: ${{ steps.pkg.outputs.asset }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "${TAG}" --json assets --jq '.assets[].name' | grep -Fx "${ASSET}" >/dev/null; then
+            echo "Release asset already exists; verifying sha256 and refusing to overwrite."
+
+            TMP_DIR=$(mktemp -d)
+            gh release download "${TAG}" -p "${ASSET}" -D "${TMP_DIR}"
+
+            REMOTE_SHA=$(sha256sum "${TMP_DIR}/${ASSET}" | awk '{print $1}')
+            LOCAL_SHA=$(sha256sum "${ASSET}" | awk '{print $1}')
+
+            if [ "${REMOTE_SHA}" != "${LOCAL_SHA}" ]; then
+              echo "Existing release asset sha mismatch; refusing to overwrite."
+              echo "remote=${REMOTE_SHA} local=${LOCAL_SHA}"
+              exit 1
+            fi
+          else
+            gh release upload "${TAG}" "${ASSET}"
+          fi
