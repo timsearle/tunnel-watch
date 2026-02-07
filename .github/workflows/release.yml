@@ -11,12 +11,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    runs-on: macos-14
+  prepare:
+    runs-on: ubuntu-24.04
     outputs:
-      tag: ${{ steps.pkg.outputs.tag }}
-      version: ${{ steps.pkg.outputs.version }}
-      sha256: ${{ steps.pkg.outputs.sha256 }}
+      tag: ${{ steps.ver.outputs.tag }}
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,6 +49,23 @@ jobs:
           echo "tag=${NEW_TAG}" >> "$GITHUB_OUTPUT"
           echo "version=${NEW_TAG#v}" >> "$GITHUB_OUTPUT"
 
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          if ! gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release create "${TAG}" --generate-notes --target "${GITHUB_SHA}"
+          fi
+
+  release-macos:
+    needs: prepare
+    runs-on: macos-14
+    outputs:
+      sha256: ${{ steps.pkg.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Setup Swift
         uses: swift-actions/setup-swift@v2
         with:
@@ -60,9 +76,6 @@ jobs:
 
       - name: Package
         id: pkg
-        env:
-          TAG: ${{ steps.ver.outputs.tag }}
-          VERSION: ${{ steps.ver.outputs.version }}
         run: |
           set -euo pipefail
           ASSET="tunnel-watch-macos-arm64.zip"
@@ -78,46 +91,26 @@ jobs:
 
           echo "asset=${ASSET}" >> "$GITHUB_OUTPUT"
           echo "sha256=${SHA}" >> "$GITHUB_OUTPUT"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release (immutable)
+      - name: Upload macOS asset
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.pkg.outputs.tag }}
+          TAG: ${{ needs.prepare.outputs.tag }}
           ASSET: ${{ steps.pkg.outputs.asset }}
         run: |
           set -euo pipefail
 
-          if ! gh release view "${TAG}" >/dev/null 2>&1; then
-            gh release create "${TAG}" --generate-notes --target "${GITHUB_SHA}"
-          fi
-
           if gh release view "${TAG}" --json assets --jq '.assets[].name' | grep -Fx "${ASSET}" >/dev/null; then
-            echo "Release asset already exists; verifying sha256 and refusing to overwrite."
-
-            TMP_DIR=$(mktemp -d)
-            gh release download "${TAG}" -p "${ASSET}" -D "${TMP_DIR}"
-
-            REMOTE_SHA=$(shasum -a 256 "${TMP_DIR}/${ASSET}" | awk '{print $1}')
-            LOCAL_SHA=$(shasum -a 256 "${ASSET}" | awk '{print $1}')
-
-            if [ "${REMOTE_SHA}" != "${LOCAL_SHA}" ]; then
-              echo "Existing release asset sha mismatch; refusing to overwrite."
-              echo "remote=${REMOTE_SHA} local=${LOCAL_SHA}"
-              exit 1
-            fi
+            echo "Asset ${ASSET} already exists for ${TAG}; skipping upload."
           else
             gh release upload "${TAG}" "${ASSET}"
           fi
 
   release-linux:
-    needs: release
+    needs: prepare
     runs-on: ubuntu-24.04-arm64
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Swift
         uses: swift-actions/setup-swift@v2
@@ -129,9 +122,6 @@ jobs:
 
       - name: Package (linux arm64)
         id: pkg
-        env:
-          TAG: ${{ needs.release.outputs.tag }}
-          VERSION: ${{ needs.release.outputs.version }}
         run: |
           set -euo pipefail
           ASSET="tunnel-watch-linux-arm64.tar.gz"
@@ -148,42 +138,30 @@ jobs:
           echo "asset=${ASSET}" >> "$GITHUB_OUTPUT"
           echo "sha256=${SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Upload Linux asset (immutable)
+      - name: Upload Linux asset
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.release.outputs.tag }}
+          TAG: ${{ needs.prepare.outputs.tag }}
           ASSET: ${{ steps.pkg.outputs.asset }}
         run: |
           set -euo pipefail
 
           if gh release view "${TAG}" --json assets --jq '.assets[].name' | grep -Fx "${ASSET}" >/dev/null; then
-            echo "Release asset already exists; verifying sha256 and refusing to overwrite."
-
-            TMP_DIR=$(mktemp -d)
-            gh release download "${TAG}" -p "${ASSET}" -D "${TMP_DIR}"
-
-            REMOTE_SHA=$(sha256sum "${TMP_DIR}/${ASSET}" | awk '{print $1}')
-            LOCAL_SHA=$(sha256sum "${ASSET}" | awk '{print $1}')
-
-            if [ "${REMOTE_SHA}" != "${LOCAL_SHA}" ]; then
-              echo "Existing release asset sha mismatch; refusing to overwrite."
-              echo "remote=${REMOTE_SHA} local=${LOCAL_SHA}"
-              exit 1
-            fi
+            echo "Asset ${ASSET} already exists for ${TAG}; skipping upload."
           else
             gh release upload "${TAG}" "${ASSET}"
           fi
 
   homebrew-update:
-    needs: release
+    needs: [prepare, release-macos]
     runs-on: ubuntu-24.04
     steps:
       - name: Trigger Homebrew tap update
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          SHA256: ${{ needs.release.outputs.sha256 }}
-          VERSION: ${{ needs.release.outputs.version }}
-          TAG: ${{ needs.release.outputs.tag }}
+          SHA256: ${{ needs.release-macos.outputs.sha256 }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           set -euo pipefail
 
