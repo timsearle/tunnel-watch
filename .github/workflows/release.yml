@@ -116,6 +116,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: apt-get update && apt-get install -y --no-install-recommends curl
+
       - name: Build (release)
         run: swift build -c release
 
@@ -146,20 +149,21 @@ jobs:
         run: |
           set -euo pipefail
 
-          RELEASE_ID=$(curl -sSL \
+          RELEASE=$(curl -sSfL \
             -H "Authorization: Bearer ${GH_TOKEN}" \
-            "https://api.github.com/repos/${REPO}/releases/tags/${TAG}" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+            "https://api.github.com/repos/${REPO}/releases/tags/${TAG}")
 
-          EXISTING=$(curl -sSL \
+          RELEASE_ID=$(echo "${RELEASE}" | grep -m1 '"id":' | grep -o '[0-9]*')
+
+          ASSET_EXISTS=$(curl -sSfL \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             "https://api.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets" \
-            | python3 -c "import sys,json; names=[a['name'] for a in json.load(sys.stdin)]; print('yes' if '${ASSET}' in names else 'no')")
+            | grep -c "\"name\":\"${ASSET}\"" || true)
 
-          if [ "${EXISTING}" = "yes" ]; then
+          if [ "${ASSET_EXISTS}" -gt 0 ]; then
             echo "Asset ${ASSET} already exists for ${TAG}; skipping upload."
           else
-            curl -sSL -X POST \
+            curl -sSfL -X POST \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Content-Type: application/gzip" \
               --data-binary @"${ASSET}" \
