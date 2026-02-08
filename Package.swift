@@ -17,13 +17,6 @@ let package = Package(
             name: "TunnelWatchAppleSupport",
             targets: ["TunnelWatchAppleSupport"]
         ),
-        .executable(
-            name: "tunnel-watch",
-            targets: ["tunnel-watch"]
-        ),
-    ],
-    dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
     ],
     targets: [
         .target(
@@ -32,13 +25,6 @@ let package = Package(
         .target(
             name: "TunnelWatchAppleSupport",
             dependencies: ["TunnelWatchCore"]
-        ),
-        .executableTarget(
-            name: "tunnel-watch",
-            dependencies: [
-                "TunnelWatchCore",
-                .product(name: "ArgumentParser", package: "swift-argument-parser"),
-            ]
         ),
         .testTarget(
             name: "TunnelWatchCoreTests",

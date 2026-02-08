@@ -60,19 +60,22 @@ jobs:
 
   release-macos:
     needs: prepare
-    runs-on: macos-14
+    runs-on: ubuntu-24.04
     outputs:
       sha256: ${{ steps.pkg.outputs.sha256 }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v2
+      - uses: actions/setup-go@v5
         with:
-          swift-version: "6.1"
+          go-version: "1.23"
 
-      - name: Build (release)
-        run: swift build -c release
+      - name: Build (release, darwin/arm64)
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 \
+            go build -ldflags "-s -w -X main.version=${VERSION}" -o tunnel-watch .
 
       - name: Package
         id: pkg
@@ -80,14 +83,12 @@ jobs:
           set -euo pipefail
           ASSET="tunnel-watch-macos-arm64.zip"
 
-          BIN_DIR="$(swift build -c release --show-bin-path)"
-
           mkdir -p dist
-          cp "${BIN_DIR}/tunnel-watch" dist/tunnel-watch
+          cp tunnel-watch dist/tunnel-watch
           chmod +x dist/tunnel-watch
           (cd dist && zip -qry "../${ASSET}" "tunnel-watch")
 
-          SHA=$(shasum -a 256 "${ASSET}" | awk '{print $1}')
+          SHA=$(sha256sum "${ASSET}" | awk '{print $1}')
 
           echo "asset=${ASSET}" >> "$GITHUB_OUTPUT"
           echo "sha256=${SHA}" >> "$GITHUB_OUTPUT"
@@ -108,19 +109,20 @@ jobs:
 
   release-linux:
     needs: prepare
-    runs-on: ubuntu-24.04-arm
-    container: swift:6.1
-    defaults:
-      run:
-        shell: bash
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: apt-get update && apt-get install -y --no-install-recommends curl
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
 
-      - name: Build (release)
-        run: swift build -c release
+      - name: Build (release, linux/arm64)
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 \
+            go build -ldflags "-s -w -X main.version=${VERSION}" -o tunnel-watch .
 
       - name: Package (linux arm64)
         id: pkg
@@ -128,10 +130,8 @@ jobs:
           set -euo pipefail
           ASSET="tunnel-watch-linux-arm64.tar.gz"
 
-          BIN_DIR="$(swift build -c release --show-bin-path)"
-
           mkdir -p dist
-          cp "${BIN_DIR}/tunnel-watch" dist/tunnel-watch
+          cp tunnel-watch dist/tunnel-watch
           chmod +x dist/tunnel-watch
           (cd dist && tar -czf "../${ASSET}" "tunnel-watch")
 
@@ -145,29 +145,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.prepare.outputs.tag }}
           ASSET: ${{ steps.pkg.outputs.asset }}
-          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
-          RELEASE=$(curl -sSfL \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            "https://api.github.com/repos/${REPO}/releases/tags/${TAG}")
-
-          RELEASE_ID=$(echo "${RELEASE}" | grep -m1 '"id":' | grep -o '[0-9]*')
-
-          ASSET_EXISTS=$(curl -sSfL \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            "https://api.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets" \
-            | grep -c "\"name\":\"${ASSET}\"" || true)
-
-          if [ "${ASSET_EXISTS}" -gt 0 ]; then
+          if gh release view "${TAG}" --json assets --jq '.assets[].name' | grep -Fx "${ASSET}" >/dev/null; then
             echo "Asset ${ASSET} already exists for ${TAG}; skipping upload."
           else
-            curl -sSfL -X POST \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Content-Type: application/gzip" \
-              --data-binary @"${ASSET}" \
-              "https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets?name=${ASSET}"
+            gh release upload "${TAG}" "${ASSET}"
           fi
 
   homebrew-update:

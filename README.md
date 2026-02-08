@@ -6,13 +6,13 @@ Report whether the Rotherhithe Tunnel is open or closed, powered by the TfL Road
 
 ```bash
 # Debug build
-swift build
+go build -o tunnel-watch .
 
-# Release build
-swift build -c release
+# Release build (stripped)
+go build -ldflags "-s -w" -o tunnel-watch .
 
 # Tests
-swift test
+go test ./...
 ```
 
 ## Install (Homebrew)
@@ -38,8 +38,8 @@ install -m 755 tunnel-watch /usr/local/bin/tunnel-watch
 
 ```bash
 # Help
-./.build/release/tunnel-watch --help
-./.build/release/tunnel-watch help status
+tunnel-watch --help
+tunnel-watch help status
 
 # Status (defaults to "Rotherhithe Tunnel")
 tunnel-watch status
@@ -88,10 +88,11 @@ This repo includes an Apple-facing support library (`TunnelWatchAppleSupport`) i
 
 ## CI / Releases
 
-- CI: `.github/workflows/ci.yml` runs `swift test` on push/PR.
+- CI: `.github/workflows/ci.yml` runs `go test` and `swift test` on push/PR.
 - Release: `.github/workflows/release.yml` runs on manual dispatch and:
   - computes the next **minor** tag (e.g. `v0.0.0` → `v0.1.0`)
-  - builds `tunnel-watch-macos-arm64.zip` and creates a GitHub Release
+  - cross-compiles Go binaries for `darwin/arm64` and `linux/arm64`
+  - creates a GitHub Release with `tunnel-watch-macos-arm64.zip` and `tunnel-watch-linux-arm64.tar.gz`
   - treats releases as **immutable** (reruns verify the existing asset but do not overwrite it)
   - triggers `timsearle/homebrew-tap`’s `update-formula.yml` to update the Homebrew formula
 
