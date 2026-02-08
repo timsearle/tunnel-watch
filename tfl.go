@@ -65,7 +65,13 @@ func (c *TfLClient) FetchRoadDisruptions() ([]RoadDisruption, error) {
 	}
 	u.RawQuery = q.Encode()
 
-	resp, err := c.HTTPClient.Get(u.String())
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("User-Agent", "tunnel-watch/"+version)
+
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("TfL API request failed: %w", err)
 	}
